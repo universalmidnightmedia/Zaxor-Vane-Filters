@@ -1,0 +1,29 @@
+name: Build Filters on Push
+on:
+  push: { branches: [ main ] }
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate filters JSON
+        run: |
+          mkdir -p dist
+          cat > dist/filters.json <<'EOF'
+          {
+            "focus": ["military", "cyber", "blackout", "blockade", "sanctions", "anomaly"],
+            "avoid": ["celebrity gossip", "sports drama"],
+            "whitelist_sources": ["Reuters","DW","BBC","AP","Al Jazeera","ZeroHedge","Grayzone","MintPress"],
+            "boost": ["breaking","leak","satellite","troop movement","energy grid","currency swap"]
+          }
+          EOF
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zaxor-filters
+          path: dist/filters.json
+          retention-days: 30
