@@ -1,17 +1,14 @@
 name: Make Release
+
 on:
   workflow_dispatch:
     inputs:
-      tag:
-        description: 'Tag (e.g., v0.1.0)'
-        required: true
-        default: 'v0.1.0'
       title:
         description: 'Release title'
         required: true
         default: 'Zaxor Vane Filters'
 
-# allow release & tag writes
+# Needed to create tags & releases
 permissions:
   contents: write
 
@@ -19,15 +16,24 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (full history)
+      - name: Checkout (full history for tags)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      # Ensure artifact exists for upload (works even if repo doesn't commit dist/)
-      - name: Ensure dist/filters.json exists
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Build (generates dist/filters.json even if nothing is committed in dist/)
+      - name: Build filters
         run: |
           mkdir -p dist
+          # If you keep index.js in repo, run it; otherwise write a safe default
+          if [ -f index.js ]; then
+            node index.js || true
+          fi
           if [ ! -f dist/filters.json ]; then
             cat > dist/filters.json <<'EOF'
             {
@@ -38,14 +44,20 @@ jobs:
             }
             EOF
           fi
+          echo "Built files:"
           ls -lah dist/
 
-      # Create or update the release (auto-creates the tag if missing)
+      # Generate a unique tag so we never collide (fixes exit code 128/2 on reused tags)
+      - name: Make unique tag
+        id: tag
+        run: echo "TAG=v$(date +%Y.%m.%d-%H%M%S)" >> $GITHUB_ENV
+
+      # Create or update the release and attach the file
       - name: Create/Update Release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ inputs.tag }}
-          name: ${{ inputs.title }}
+          tag: ${{ env.TAG }}
+          name: ${{ github.event.inputs.title }}
           artifacts: "dist/filters.json"
           artifactErrorsFailBuild: true
           allowUpdates: true
