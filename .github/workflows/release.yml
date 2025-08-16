@@ -5,37 +5,48 @@ on:
       tag:
         description: 'Tag (e.g., v0.1.0)'
         required: true
+        default: 'v0.1.0'
       title:
         description: 'Release title'
         required: true
         default: 'Zaxor Vane Filters'
 
+# allow release & tag writes
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Ensure dist exists
+      # Ensure artifact exists for upload (works even if repo doesn't commit dist/)
+      - name: Ensure dist/filters.json exists
         run: |
           mkdir -p dist
-          [ -f dist/filters.json ] || cat > dist/filters.json <<'EOF'
-          {
-            "focus": ["military", "cyber", "blackout", "blockade", "sanctions", "anomaly"],
-            "avoid": ["celebrity gossip", "sports drama"],
-            "whitelist_sources": ["Reuters","DW","BBC","AP","Al Jazeera","ZeroHedge","Grayzone","MintPress"],
-            "boost": ["breaking","leak","satellite","troop movement","energy grid","currency swap"]
-          }
-          EOF
+          if [ ! -f dist/filters.json ]; then
+            cat > dist/filters.json <<'EOF'
+            {
+              "focus": ["military", "cyber", "blackout", "blockade", "sanctions", "anomaly"],
+              "avoid": ["celebrity gossip", "sports drama"],
+              "whitelist_sources": ["Reuters","DW","BBC","AP","Al Jazeera","ZeroHedge","Grayzone","MintPress"],
+              "boost": ["breaking","leak","satellite","troop movement","energy grid","currency swap"]
+            }
+            EOF
+          fi
+          ls -lah dist/
 
-      - name: Create Git tag
-        run: |
-          git tag ${{ inputs.tag }}
-          git push origin ${{ inputs.tag }}
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+      # Create or update the release (auto-creates the tag if missing)
+      - name: Create/Update Release
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ inputs.tag }}
+          tag: ${{ inputs.tag }}
           name: ${{ inputs.title }}
-          files: dist/filters.json
+          artifacts: "dist/filters.json"
+          artifactErrorsFailBuild: true
+          allowUpdates: true
+          replacesArtifacts: true
