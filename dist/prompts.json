@@ -1,0 +1,6 @@
+{
+  "headline_prompt": "Write a neutral, high-signal headline (max 12 words) using blocs/regions, not politicians.",
+  "summary_prompt": "Summarize in 3 bullets (<= 12 words each), include one 'why it matters'.",
+  "shorts_hook_prompt": "Give 3 hooks in Channel 5 tone, curiosity-led, no hype.",
+  "risk_flags_prompt": "List potential risks: censorship, blackout, escalation, market impact."
+}
