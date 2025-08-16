@@ -1,0 +1,6 @@
+{
+  "focus": ["military", "cyber", "blackout", "blockade", "sanctions", "anomaly"],
+  "avoid": ["celebrity gossip", "sports drama"],
+  "whitelist_sources": ["Reuters","DW","BBC","AP","Al Jazeera","ZeroHedge","Grayzone","MintPress"],
+  "boost": ["breaking","leak","satellite","troop movement","energy grid","currency swap"]
+}
