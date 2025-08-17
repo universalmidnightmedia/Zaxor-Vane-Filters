@@ -1,77 +1,23 @@
-name: Make Release (Robust)
+name: Make Release
 
 on:
   workflow_dispatch:
-    inputs:
-      title:
-        description: 'Release title'
-        required: true
-        default: 'Zaxor Vane Filters'
-
-# Required to create tags & releases
-permissions:
-  contents: write
+  push:
+    tags:
+      - 'v*.*.*'
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (full history for tags)
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      # Create the artifact if it doesn't exist (no Node required)
-      - name: Ensure dist/filters.json exists
+      - uses: actions/checkout@v3
+      - name: Build project
         run: |
-          mkdir -p dist
-          if [ ! -f dist/filters.json ]; then
-            cat > dist/filters.json <<'EOF'
-            {
-              "focus": ["military", "cyber", "blackout", "blockade", "sanctions", "anomaly"],
-              "avoid": ["celebrity gossip", "sports drama"],
-              "whitelist_sources": ["Reuters","DW","BBC","AP","Al Jazeera","ZeroHedge","Grayzone","MintPress"],
-              "boost": ["breaking","leak","satellite","troop movement","energy grid","currency swap"]
-            }
-            EOF
-          fi
-          echo "Built files:"
-          ls -lah dist/
-
-      # Make a unique tag so we never collide
-      - name: Generate unique tag
-        id: tag
-        run: echo "tag=v$(date +%Y.%m.%d-%H%M%S)" >> $GITHUB_OUTPUT
-
-      # Create the release via GitHub API
-      - name: Create Release (GitHub API)
-        id: create_release
-        uses: actions/github-script@v7
+          mkdir dist
+          echo "Filters build here" > dist/readme.txt
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
         with:
-          script: |
-            const { owner, repo } = context.repo;
-            const tag = core.getInput('tag') || process.env.TAG || '${{ steps.tag.outputs.tag }}';
-            const title = core.getInput('title') || '${{ github.event.inputs.title }}';
-            const release = await github.rest.repos.createRelease({
-              owner, repo,
-              tag_name: tag,
-              name: title,
-              draft: false,
-              prerelease: false
-            });
-            core.setOutput('upload_url', release.data.upload_url);
-            core.setOutput('html_url', release.data.html_url);
-
-      # Upload the asset to that release (official upload endpoint)
-      - name: Upload filters.json to Release
-        uses: actions/upload-release-asset@v1
+          files: dist/**
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: dist/filters.json
-          asset_name: filters.json
-          asset_content_type: application/json
-
-      - name: Show Release URL
-        run: echo "Release ready at ${{ steps.create_release.outputs.html_url }}"
